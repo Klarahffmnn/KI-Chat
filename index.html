@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CiteFlow – KI-Chat</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    #root {
+      width: 100%;
+      max-width: 480px;
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .bounce-1 { animation: bounce 1s ease-in-out infinite; }
+    .bounce-2 { animation: bounce 1s ease-in-out infinite 0.15s; }
+    .bounce-3 { animation: bounce 1s ease-in-out infinite 0.3s; }
+    textarea { font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    function IconSend({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+    }
+    function IconBookOpen({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>;
+    }
+    function IconEye({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+    }
+    function IconCopy({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+    }
+    function IconBookmark({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>;
+    }
+    function IconChevronDown({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
+    }
+    function IconAlertTriangle({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+    }
+    function IconCheckCircle({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+    }
+    function IconInfo({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+    }
+    function IconMessageSquare({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+    }
+    function IconX({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+    }
+    function IconFileText({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+    }
+    function IconThumbsUp({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>;
+    }
+    function IconThumbsDown({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>;
+    }
+    function IconLayers({ size=16, color="currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+    }
+
+    const PROMPT_CHIPS = [
+      "Fasse die 3 wichtigsten Theorien zusammen",
+      "Gibt es Widersprüche in meinen Quellen?",
+      "Was sagt Autor X zu Thema Y?",
+      "Welche Gegenargumente gibt es?",
+      "Vergleiche Quelle A mit Quelle B",
+    ];
+
+    const INITIAL_MESSAGES = [
+      {
+        id: 1, role: "assistant", isIntro: true,
+        text: "Ich durchsuche ausschließlich deine hochgeladenen PDFs – keine Internetquellen. Stelle mir eine Frage zu deiner Literatur.",
+        confidence: null, sources: [],
+      },
+      { id: 2, role: "user", text: "Was sagt Habermas zur kommunikativen Vernunft?" },
+      {
+        id: 3, role: "assistant",
+        text: "Habermas versteht kommunikative Vernunft als die Fähigkeit von Akteuren, durch sprachliche Verständigung Konsens zu erzielen. Sie basiert auf der Idee eines herrschaftsfreien Diskurses, in dem das bessere Argument zählt – unabhängig von Macht oder Status.",
+        confidence: 92, confidenceLabel: "Hohe Sicherheit", confidenceLevel: "high",
+        sources: [
+          { title: "Theorie des kommunikativen Handelns", page: 28, author: "Habermas" },
+          { title: "Theorie des kommunikativen Handelns", page: 44, author: "Habermas" },
+        ],
+        sourceCount: "multi", feedback: null,
+      },
+      { id: 4, role: "user", text: "Wie kritisiert er die Systemtheorie?" },
+      {
+        id: 5, role: "assistant",
+        text: "Habermas kritisiert die Systemtheorie dafür, dass sie soziale Integration rein funktional erklärt und dabei die normative Dimension menschlicher Kommunikation ausblendet.",
+        confidence: 54, confidenceLabel: "Mittlere Sicherheit", confidenceLevel: "mid",
+        sources: [{ title: "Theorie des kommunikativen Handelns", page: 91, author: "Habermas" }],
+        sourceCount: "single",
+        warning: "Nur eine Quelle gefunden – weitere Belege empfohlen.",
+        feedback: null,
+      },
+      { id: 6, role: "user", text: "Was sagt Habermas zu digitalen Öffentlichkeiten?" },
+      {
+        id: 7, role: "assistant",
+        text: "Habermas hat seine Theorie der Öffentlichkeit auf digitale Räume ausgeweitet und die fragmentierende Wirkung sozialer Medien thematisiert.",
+        confidence: 18, confidenceLabel: "Niedrige Sicherheit", confidenceLevel: "low",
+        sources: [], sourceCount: "none",
+        warning: "Kein Beleg in deinen Quellen gefunden. Diese Antwort basiert auf allgemeinem KI-Wissen – nicht auf deiner Bibliothek.",
+        feedback: null,
+      },
+    ];
+
+    const SOURCES_SCOPE = ["Alle Quellen (12)", "Nur markierte (3)", "Sammlung: Habermas", "Sammlung: Seminararbeit"];
+
+    const s = {
+      wrap: { display:"flex", flexDirection:"column", height:"100%", maxHeight:720, background:"#f8fafc", borderRadius:16, overflow:"hidden", border:"1px solid #e2e8f0" },
+      header: { display:"flex", alignItems:"center", gap:10, padding:"12px 16px", background:"#fff", borderBottom:"1px solid #e2e8f0" },
+      headerIcon: { width:32, height:32, borderRadius:10, background:"#2563eb", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
+      headerTitle: { fontSize:14, fontWeight:500, color:"#1e293b", lineHeight:1.2 },
+      headerSub: { fontSize:11, color:"#94a3b8", marginTop:1 },
+      scopeBtn: { display:"flex", alignItems:"center", gap:6, fontSize:11, color:"#64748b", border:"1px solid #e2e8f0", borderRadius:8, padding:"6px 10px", background:"#fff", cursor:"pointer", marginLeft:"auto" },
+      scopeMenu: { position:"absolute", right:0, top:"calc(100% + 4px)", background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, boxShadow:"0 4px 16px rgba(0,0,0,0.08)", zIndex:10, minWidth:180, overflow:"hidden" },
+      scopeItem: (active) => ({ display:"block", width:"100%", textAlign:"left", fontSize:11, padding:"8px 12px", border:"none", background: active ? "#eff6ff" : "transparent", color: active ? "#2563eb" : "#475569", cursor:"pointer" }),
+      messages: { flex:1, overflowY:"auto", padding:"16px 16px 8px" },
+      userWrap: { display:"flex", justifyContent:"flex-end", marginBottom:12 },
+      userBubble: { maxWidth:"80%", background:"#2563eb", color:"#fff", fontSize:13, borderRadius:"16px 16px 4px 16px", padding:"10px 14px", lineHeight:1.6 },
+      asstWrap: { display:"flex", alignItems:"flex-start", gap:8, marginBottom:16 },
+      asstAvatar: (bg) => ({ width:28, height:28, borderRadius:"50%", background:bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:2 }),
+      asstBubble: { background:"#fff", border:"1px solid #e2e8f0", borderRadius:"16px 16px 16px 4px", padding:"12px 14px", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", flex:1, minWidth:0 },
+      asstText: { fontSize:13, color:"#1e293b", lineHeight:1.65 },
+      confWrap: (bg, border) => ({ marginTop:8, padding:"8px 12px", borderRadius:8, background:bg, border:`1px solid ${border}` }),
+      confRow: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 },
+      confLabel: (color) => ({ fontSize:11, fontWeight:500, color }),
+      confTrack: { height:6, borderRadius:3, background:"rgba(255,255,255,0.6)", overflow:"hidden" },
+      confFill: (color, pct) => ({ height:"100%", borderRadius:3, background:color, width:`${pct}%`, transition:"width 0.7s" }),
+      warning: (bg, border, color) => ({ marginTop:8, display:"flex", alignItems:"flex-start", gap:6, fontSize:11, borderRadius:8, padding:"8px 10px", background:bg, border:`1px solid ${border}`, color }),
+      sourcesWrap: { marginTop:10 },
+      sourcesLabel: { fontSize:11, color:"#94a3b8", marginBottom:6 },
+      badgesRow: { display:"flex", flexWrap:"wrap", gap:6 },
+      badge: { display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"2px 8px", borderRadius:99, background:"#eff6ff", color:"#1d4ed8", border:"1px solid #bfdbfe", cursor:"pointer" },
+      addSource: { marginTop:8, fontSize:11, color:"#2563eb", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:4 },
+      actionsRow: { display:"flex", alignItems:"center", gap:4, marginTop:6, paddingLeft:4 },
+      actionBtn: { display:"flex", alignItems:"center", gap:4, fontSize:11, color:"#94a3b8", padding:"4px 8px", borderRadius:6, border:"none", background:"transparent", cursor:"pointer" },
+      feedbackWrap: { display:"flex", alignItems:"center", gap:2, marginLeft:"auto" },
+      feedBtn: (active, activeColor) => ({ padding:6, borderRadius:6, border:"none", background:"transparent", cursor:"pointer", color: active ? activeColor : "#cbd5e1" }),
+      typingWrap: { display:"flex", alignItems:"center", gap:8, marginBottom:12 },
+      typingBubble: { background:"#fff", border:"1px solid #e2e8f0", borderRadius:"16px 16px 16px 4px", padding:"12px 14px", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", display:"flex", gap:4, alignItems:"center" },
+      dot: { width:6, height:6, borderRadius:"50%", background:"#cbd5e1" },
+      chipsWrap: { padding:"8px 16px", background:"#fff", borderTop:"1px solid #f1f5f9", display:"flex", gap:8, overflowX:"auto" },
+      chip: { flexShrink:0, fontSize:11, color:"#2563eb", border:"1px solid #bfdbfe", borderRadius:99, padding:"4px 12px", background:"#fff", cursor:"pointer", whiteSpace:"nowrap" },
+      inputArea: { padding:"8px 16px 16px", background:"#fff" },
+      inputBox: { display:"flex", alignItems:"flex-end", gap:8, background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:16, padding:"8px 10px" },
+      textarea: { flex:1, background:"transparent", border:"none", outline:"none", resize:"none", fontSize:13, color:"#1e293b", fontFamily:"inherit", lineHeight:1.5, maxHeight:80 },
+      sendBtn: (active) => ({ flexShrink:0, width:32, height:32, borderRadius:10, background: active ? "#2563eb" : "#e2e8f0", border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor: active ? "pointer" : "default", marginBottom:2 }),
+      inputHint: { textAlign:"center", fontSize:11, color:"#94a3b8", marginTop:6 },
+      modalBackdrop: { position:"absolute", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:16, zIndex:20, padding:16 },
+      modalCard: { background:"#fff", borderRadius:16, padding:20, maxWidth:340, width:"100%" },
+      modalHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 },
+      modalTitle: { fontSize:13, fontWeight:500, color:"#1e293b" },
+      modalCloseBtn: { background:"none", border:"none", cursor:"pointer", color:"#94a3b8" },
+      modalContent: { background:"#f8fafc", borderRadius:10, padding:14, marginBottom:14 },
+      modalMeta: { fontSize:11, color:"#94a3b8", marginBottom:4 },
+      modalSource: { fontSize:11, fontWeight:500, color:"#374151", marginBottom:10 },
+      modalHighlight: { background:"#fef9c3", border:"1px solid #fde68a", borderRadius:8, padding:10 },
+      modalQuote: { fontSize:11, color:"#374151", lineHeight:1.6, fontStyle:"italic" },
+      modalOpenBtn: { width:"100%", fontSize:13, textAlign:"center", color:"#2563eb", border:"1px solid #bfdbfe", borderRadius:10, padding:"9px 0", background:"transparent", cursor:"pointer" },
+    };
+
+    const CONF = {
+      high: { bar:"#10b981", text:"#065f46", bg:"#f0fdf4", border:"#a7f3d0" },
+      mid:  { bar:"#f59e0b", text:"#78350f", bg:"#fffbeb", border:"#fde68a" },
+      low:  { bar:"#ef4444", text:"#7f1d1d", bg:"#fef2f2", border:"#fecaca" },
+    };
+
+    function ConfidenceBar({ level, label, value }) {
+      const c = CONF[level];
+      return (
+        <div style={s.confWrap(c.bg, c.border)}>
+          <div style={s.confRow}>
+            <span style={s.confLabel(c.text)}>{label}</span>
+            <span style={s.confLabel(c.text)}>{value}%</span>
+          </div>
+          <div style={s.confTrack}>
+            <div style={s.confFill(c.bar, value)} />
+          </div>
+        </div>
+      );
+    }
+
+    function SourceBadge({ source, onCheck }) {
+      return (
+        <button style={s.badge} onClick={() => onCheck(source)}>
+          <IconFileText size={10} color="#1d4ed8" />
+          {source.author} (S. {source.page})
+          <IconEye size={10} color="#93c5fd" />
+        </button>
+      );
+    }
+
+    function ChatMessage({ msg, onFeedback, onSourceCheck }) {
+      const [copied, setCopied] = useState(false);
+      const handleCopy = () => {
+        navigator.clipboard?.writeText(msg.text).catch(() => {});
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      };
+
+      if (msg.role === "user") {
+        return (
+          <div style={s.userWrap}>
+            <div style={s.userBubble}>{msg.text}</div>
+          </div>
+        );
+      }
+      if (msg.isIntro) {
+        return (
+          <div style={s.asstWrap}>
+            <div style={s.asstAvatar("#dbeafe")}>
+              <IconBookOpen size={14} color="#2563eb" />
+            </div>
+            <div style={{...s.asstBubble, background:"#eff6ff", border:"1px solid #dbeafe"}}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                <IconInfo size={12} color="#3b82f6" />
+                <span style={{ fontSize:11, fontWeight:500, color:"#1d4ed8" }}>Nur lokale PDFs</span>
+              </div>
+              <p style={{...s.asstText, color:"#1e40af"}}>{msg.text}</p>
+            </div>
+          </div>
+        );
+      }
+
+      const warnStyle = msg.confidenceLevel === "low"
+        ? s.warning("#fef2f2","#fecaca","#991b1b")
+        : s.warning("#fffbeb","#fde68a","#92400e");
+
+      return (
+        <div style={s.asstWrap}>
+          <div style={s.asstAvatar("#f1f5f9")}>
+            <IconLayers size={14} color="#64748b" />
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={s.asstBubble}>
+              <p style={s.asstText}>{msg.text}</p>
+              {msg.confidence !== null && (
+                <ConfidenceBar level={msg.confidenceLevel} label={msg.confidenceLabel} value={msg.confidence} />
+              )}
+              {msg.warning && (
+                <div style={warnStyle}>
+                  <span style={{ flexShrink:0, marginTop:1 }}><IconAlertTriangle size={12} color="currentColor" /></span>
+                  <span>{msg.warning}</span>
+                </div>
+              )}
+              {msg.sources && msg.sources.length > 0 && (
+                <div style={s.sourcesWrap}>
+                  <p style={s.sourcesLabel}>{msg.sourceCount === "multi" ? "Mehrere Quellen belegt:" : "Einzelbeleg:"}</p>
+                  <div style={s.badgesRow}>
+                    {msg.sources.map((src, i) => (
+                      <SourceBadge key={i} source={src} onCheck={onSourceCheck} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {msg.confidenceLevel === "low" && (
+                <button style={s.addSource}>
+                  <IconFileText size={11} color="#2563eb" />
+                  Quelle zur Bibliothek hinzufügen
+                </button>
+              )}
+            </div>
+            <div style={s.actionsRow}>
+              <button style={s.actionBtn} onClick={handleCopy}>
+                {copied
+                  ? <><IconCheckCircle size={12} color="#10b981" /><span style={{color:"#10b981"}}>Kopiert</span></>
+                  : <><IconCopy size={12} color="currentColor" />Kopieren</>}
+              </button>
+              <button style={s.actionBtn}>
+                <IconBookmark size={12} color="currentColor" />Speichern
+              </button>
+              <div style={s.feedbackWrap}>
+                <button style={s.feedBtn(msg.feedback==="up","#10b981")} onClick={() => onFeedback(msg.id,"up")}>
+                  <IconThumbsUp size={12} color={msg.feedback==="up" ? "#10b981" : "#cbd5e1"} />
+                </button>
+                <button style={s.feedBtn(msg.feedback==="down","#ef4444")} onClick={() => onFeedback(msg.id,"down")}>
+                  <IconThumbsDown size={12} color={msg.feedback==="down" ? "#ef4444" : "#cbd5e1"} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function SourceModal({ source, onClose }) {
+      return (
+        <div style={s.modalBackdrop} onClick={onClose}>
+          <div style={s.modalCard} onClick={e => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <span style={s.modalTitle}>Originalstelle im PDF</span>
+              <button style={s.modalCloseBtn} onClick={onClose}><IconX size={16} color="#94a3b8" /></button>
+            </div>
+            <div style={s.modalContent}>
+              <p style={s.modalMeta}>{source.author} · Seite {source.page}</p>
+              <p style={s.modalSource}>{source.title}</p>
+              <div style={s.modalHighlight}>
+                <p style={s.modalQuote}>„...die kommunikative Vernunft drückt sich zunächst in der vereinigenden Kraft intersubjektiv geteilter Sprache aus..."</p>
+              </div>
+            </div>
+            <button style={s.modalOpenBtn} onClick={onClose}>PDF vollständig öffnen</button>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [messages, setMessages] = useState(INITIAL_MESSAGES);
+      const [input, setInput] = useState("");
+      const [scope, setScope] = useState(SOURCES_SCOPE[0]);
+      const [scopeOpen, setScopeOpen] = useState(false);
+      const [modalSource, setModalSource] = useState(null);
+      const [isTyping, setIsTyping] = useState(false);
+      const bottomRef = useRef(null);
+      const scopeRef = useRef(null);
+
+      useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, [messages, isTyping]);
+
+      useEffect(() => {
+        const handler = (e) => {
+          if (scopeRef.current && !scopeRef.current.contains(e.target)) setScopeOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+      }, []);
+
+      const handleSend = (text) => {
+        const q = text || input.trim();
+        if (!q) return;
+        setInput("");
+        setMessages(prev => [...prev, { id: Date.now(), role: "user", text: q }]);
+        setIsTyping(true);
+        setTimeout(() => {
+          setIsTyping(false);
+          setMessages(prev => [...prev, {
+            id: Date.now() + 1, role: "assistant",
+            text: "Ich habe deine Bibliothek durchsucht. Für diese Frage konnte ich nur begrenzte Belege finden – ich empfehle, weitere Quellen zu diesem Thema hinzuzufügen.",
+            confidence: 35, confidenceLabel: "Mittlere Sicherheit", confidenceLevel: "mid",
+            sources: [], sourceCount: "none",
+            warning: "Nur ein teilweiser Beleg in deinen Quellen gefunden.",
+            feedback: null,
+          }]);
+        }, 1400);
+      };
+
+      const handleFeedback = (id, type) => {
+        setMessages(prev => prev.map(m => m.id === id ? { ...m, feedback: type } : m));
+      };
+
+      return (
+        <div style={{ ...s.wrap, position:"relative" }}>
+          <div style={s.header}>
+            <div style={s.headerIcon}>
+              <IconMessageSquare size={15} color="#fff" />
+            </div>
+            <div>
+              <p style={s.headerTitle}>KI-Chat</p>
+              <p style={s.headerSub}>durchsucht nur deine lokalen PDFs</p>
+            </div>
+            <div style={{ position:"relative", marginLeft:"auto" }} ref={scopeRef}>
+              <button style={s.scopeBtn} onClick={() => setScopeOpen(o => !o)}>
+                <IconLayers size={12} color="#64748b" />
+                <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{scope}</span>
+                <IconChevronDown size={11} color="#94a3b8" />
+              </button>
+              {scopeOpen && (
+                <div style={s.scopeMenu}>
+                  {SOURCES_SCOPE.map(sc => (
+                    <button key={sc} style={s.scopeItem(scope===sc)} onClick={() => { setScope(sc); setScopeOpen(false); }}>
+                      {sc}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={s.messages} className="scrollbar-hide">
+            {messages.map(msg => (
+              <ChatMessage key={msg.id} msg={msg} onFeedback={handleFeedback} onSourceCheck={setModalSource} />
+            ))}
+            {isTyping && (
+              <div style={s.typingWrap}>
+                <div style={s.asstAvatar("#f1f5f9")}>
+                  <IconLayers size={14} color="#94a3b8" />
+                </div>
+                <div style={s.typingBubble}>
+                  <div style={s.dot} className="bounce-1" />
+                  <div style={s.dot} className="bounce-2" />
+                  <div style={s.dot} className="bounce-3" />
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          <div style={s.chipsWrap} className="scrollbar-hide">
+            {PROMPT_CHIPS.map(chip => (
+              <button key={chip} style={s.chip} onClick={() => handleSend(chip)}>{chip}</button>
+            ))}
+          </div>
+
+          <div style={s.inputArea}>
+            <div style={s.inputBox}>
+              <textarea
+                value={input}
+                style={s.textarea}
+                rows={1}
+                placeholder="Frage an deine Literatur stellen..."
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              />
+              <button style={s.sendBtn(!!input.trim())} onClick={() => handleSend()} disabled={!input.trim()}>
+                <IconSend size={14} color={input.trim() ? "#fff" : "#94a3b8"} />
+              </button>
+            </div>
+            <p style={s.inputHint}>Durchsucht: {scope}</p>
+          </div>
+
+          {modalSource && (
+            <SourceModal source={modalSource} onClose={() => setModalSource(null)} />
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
