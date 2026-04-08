@@ -2,150 +2,77 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CiteFlow Prototyp - Dashboard & KI-Chat</title>
+    <title>CiteFlow Desktop App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/lucide-static@0.321.0/font/lucide.min.css" rel="stylesheet">
+    <style>
+        body { overflow: hidden; } /* Verhindert Scrollen der ganzen Seite -> App-Feeling */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-slate-100 font-sans">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState } = React;
 
-        function App() {
-            const [messages, setMessages] = useState([
-                { id: 1, role: 'assistant', text: "Willkommen bei CiteFlow! Ich analysiere deine PDFs lokal. Frag mich etwas zu Müller (2023) oder der Methodik.", confidence: null }
-            ]);
-            const [input, setInput] = useState("");
-
-            const handleSend = (text) => {
-                if(!text) return;
-                setMessages([...messages, { id: Date.now(), role: 'user', text: text }]);
-                setTimeout(() => {
-                    setMessages(prev => [...prev, { 
-                        id: Date.now()+1, 
-                        role: 'assistant', 
-                        text: "In Kapitel 3 (S. 45) beschreibt Müller die iterative Validierung als Kernstück. Das passt zu deiner Forschungsfrage.",
-                        confidence: 92,
-                        sources: ["Müller (2023), S. 45"]
-                    }]);
-                }, 800);
-                setInput("");
-            };
-
+        // --- BEREICH DEINER KOMMILITONEN (BEISPIEL: BIBLIOTHEK) ---
+        function MainContent() {
             return (
-                <div class="flex h-screen overflow-hidden text-slate-900">
-                    {/* 1. SEITENLEISTE NAVIGATION */}
-                    <div class="w-16 bg-slate-900 flex flex-col items-center py-4 space-y-8 text-white">
-                        <i class="lucide-layers w-8 h-8 text-blue-400"></i>
-                        <i class="lucide-book-open w-6 h-6 opacity-50"></i>
-                        <i class="lucide-calendar w-6 h-6 opacity-50"></i>
-                        <i class="lucide-settings w-6 h-6 opacity-50 mt-auto"></i>
-                    </div>
-
-                    {/* 2. BIBLIOTHEK (MITTE) */}
-                    <div class="flex-1 flex flex-col bg-white border-r">
-                        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-                            <h2 class="font-bold text-lg">Meine Bibliothek</h2>
-                            <div class="flex gap-2">
-                                <button class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2">
-                                    <i class="lucide-plus w-4 h-4"></i> Quelle hinzufügen
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-y-auto p-4 space-y-3">
-                            {/* Beispiel-Quelle 1 */}
-                            <div class="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <span class="text-[10px] font-bold text-blue-600 uppercase">Gelesen</span>
-                                        <h3 class="font-semibold text-sm">Design Thinking: Die iterative Methode</h3>
-                                        <p class="text-xs text-slate-500">Müller, T. (2023) • DOI: 10.1234/hbr.2023</p>
-                                    </div>
-                                    <span class="bg-slate-100 text-[10px] px-2 py-0.5 rounded">Kapitel 3</span>
-                                </div>
-                            </div>
-                             {/* Beispiel-Quelle 2 */}
-                             <div class="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-orange-400">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <span class="text-[10px] font-bold text-orange-500 uppercase">Angefangen</span>
-                                        <h3 class="font-semibold text-sm">KI in der Bildungsforschung</h3>
-                                        <p class="text-xs text-slate-500">Schmidt, A. (2024) • DOI: 10.5678/ai.2024</p>
-                                    </div>
-                                    <span class="bg-slate-100 text-[10px] px-2 py-0.5 rounded">Kapitel 1</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 3. KI-CHAT SIDEBAR (RECHTS) */}
-                    <div class="w-96 bg-slate-50 flex flex-col border-l shadow-2xl">
-                        <div class="p-4 border-b bg-white">
-                            <h2 class="font-bold flex items-center gap-2 text-blue-700">
-                                <i class="lucide-message-square w-5 h-5"></i> CiteFlow AI Chat
-                            </h2>
-                            <p class="text-[10px] text-slate-400 uppercase mt-1">Status: Analysiert 12 Quellen</p>
-                        </div>
-
-                        <div class="flex-1 overflow-y-auto p-4 space-y-4">
-                            {messages.map(m => (
-                                <div key={m.id} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div class={`max-w-[90%] p-3 rounded-xl shadow-sm ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white border text-slate-800'}`}>
-                                        <p class="text-xs leading-relaxed">{m.text}</p>
-                                        {m.confidence && (
-                                            <div class="mt-3 pt-2 border-t border-slate-100">
-                                                <div class="flex justify-between text-[9px] mb-1">
-                                                    <span class="text-slate-500 uppercase font-bold">KI-Sicherheit</span>
-                                                    <span class="text-green-600">{m.confidence}%</span>
-                                                </div>
-                                                <div class="w-full bg-slate-100 h-1.5 rounded-full">
-                                                    <div class="bg-green-500 h-1.5 rounded-full" style={{width: m.confidence + '%'}}></div>
-                                                </div>
-                                                <div class="mt-2 flex flex-wrap gap-1">
-                                                    {m.sources.map(s => (
-                                                        <span key={s} class="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 flex items-center gap-1">
-                                                            <i class="lucide-eye w-3 h-3"></i> {s}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div class="p-4 bg-white border-t">
-                            <div class="flex gap-1 overflow-x-auto mb-3 no-scrollbar pb-1">
-                                <button onClick={() => handleSend("Fasse Müller (2023) zusammen")} class="text-[10px] whitespace-nowrap bg-slate-100 px-2 py-1 rounded-full hover:bg-blue-100">Zusammenfassen</button>
-                                <button onClick={() => handleSend("Gibt es Widersprüche?")} class="text-[10px] whitespace-nowrap bg-slate-100 px-2 py-1 rounded-full hover:bg-blue-100">Widersprüche?</button>
-                            </div>
-                            <div class="flex gap-2">
-                                <input 
-                                    class="flex-1 bg-slate-100 border-none rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500" 
-                                    placeholder="Frag CiteFlow..."
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSend(input)}
-                                />
-                                <button onClick={() => handleSend(input)} class="bg-blue-600 text-white p-2 rounded-lg">
-                                    <i class="lucide-send w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
+                <div className="flex-1 bg-white overflow-y-auto custom-scrollbar p-6">
+                    <h1 className="text-2xl font-bold mb-4">Bibliothek</h1>
+                    <p className="text-slate-500">Hier fügen deine Kommilitonen ihre Funktionen ein (Listen, Thumbnails, etc.).</p>
+                    {/* HIER PLATZHALTER FÜR TEAM-PART */}
+                    <div className="mt-8 border-2 border-dashed border-slate-200 rounded-xl h-64 flex items-center justify-center text-slate-400">
+                        Bereich für Bibliothek & Planner
                     </div>
                 </div>
             );
         }
 
+        // --- DEIN BEREICH (KI-CHAT SIDEBAR) ---
+        function AIChatSidebar() {
+            return (
+                <div className="w-80 bg-slate-50 border-l flex flex-col h-full shadow-lg">
+                    <div className="p-4 border-b bg-white font-bold text-blue-700 flex items-center gap-2">
+                        <i className="lucide-message-square w-5 h-5"></i> CiteFlow AI
+                    </div>
+                    <div className="flex-1 p-4 overflow-y-auto custom-scrollbar text-sm italic text-slate-500">
+                        Dein KI-Chat-Code kommt hier rein...
+                    </div>
+                    <div className="p-4 border-t bg-white">
+                        <input className="w-full bg-slate-100 p-2 rounded text-xs" placeholder="Frag die KI..." />
+                    </div>
+                </div>
+            );
+        }
+
+        // --- DAS GESAMTGERÜST (APP SHELL) ---
+        function CiteFlowApp() {
+            return (
+                <div className="flex h-screen w-full bg-slate-900 overflow-hidden">
+                    {/* Globale Navigation Links */}
+                    <div className="w-16 flex flex-col items-center py-6 gap-8 text-slate-400 border-r border-slate-800">
+                        <i className="lucide-home w-6 h-6 hover:text-white cursor-pointer"></i>
+                        <i className="lucide-book w-6 h-6 hover:text-white cursor-pointer"></i>
+                        <i className="lucide-layout-dashboard w-6 h-6 hover:text-white cursor-pointer"></i>
+                    </div>
+
+                    {/* Dynamischer Inhalt in der Mitte */}
+                    <MainContent />
+
+                    {/* Deine Sidebar Rechts */}
+                    <AIChatSidebar />
+                </div>
+            );
+        }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<CiteFlowApp />);
     </script>
 </body>
 </html>
